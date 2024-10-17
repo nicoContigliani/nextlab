@@ -9,7 +9,13 @@ const nextConfig = {
     
     //     return config;
     //   },
-
+    
+    // webpack: (config) => {
+    //     config.externals.push({
+    //       'uploads': 'uploads'
+    //     })
+    //     return config
+    //   }
 };
 
 export default nextConfig;
