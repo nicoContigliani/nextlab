@@ -1,26 +1,38 @@
-
 import multer from 'multer';
 import path from 'path';
 
-// Configurar Multer para almacenar los archivos en el directorio deseado
+// Configure Multer to store files in the desired directory
 const storage = multer.diskStorage({
-  destination: './public/uploads', // Carpeta donde guardar los archivos
+  destination: './public/uploads', // Folder to store files
   filename: (req, file, cb) => {
     const filename = file.originalname.replace(/\s/g, '_');
-    cb(null, filename); // Guardar el archivo con el nombre original (sin espacios)
+    cb(null, filename); // Save the file with the original name (no spaces)
   },
 });
 
-const upload = multer({ storage });
+// File filter to only allow JSON and XML files
+function fileFilter(req, file, cb) {
+  const allowedTypes = ['application/json', 'application/xml', 'text/xml'];
 
-// Desactivar el bodyParser de Next.js para manejar multipart/form-data
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true); // Accept the file
+  } else {
+    cb(new Error('Invalid file type. Only JSON and XML files are allowed.'), false); // Reject the file
+  }
+}
+
+const upload = multer({
+  storage,
+  fileFilter, // Add the fileFilter option
+});
+// Disable Next.js bodyParser to handle multipart/form-data
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Función auxiliar para ejecutar middlewares de forma asíncrona
+// Helper function to run middleware asynchronously
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
@@ -35,26 +47,26 @@ function runMiddleware(req, res, fn) {
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
-      // Ejecutar el middleware de Multer para manejar el archivo
+      // Run Multer middleware to handle the file
       await runMiddleware(req, res, upload.single('file'));
 
       if (!req.file) {
-        res.status(400).json({ error: 'No se ha recibido ningún archivo.' });
+        res.status(400).json({ error: 'No file received.' });
         return;
       }
 
-      // Si la subida es exitosa
+      // If the upload is successful
       res.status(200).json({
-        message: 'Archivo subido con éxito',
+        message: 'File uploaded successfully',
         filename: req.file.filename,
       });
     } catch (error) {
-      console.error('Error al subir el archivo:', error);
-      res.status(500).json({ error: 'Error al subir el archivo.' });
+      console.error('Error uploading file:', error);
+      res.status(500).json({ error: 'Error uploading file.' });
     }
   } else {
-    // Si no es un método POST, responder con un 405
+    // If it's not a POST method, respond with a 405
     res.setHeader('Allow', ['POST']);
-    res.status(405).json({ error: `Método ${req.method} no permitido.` });
+    res.status(405).json({ error: `Method ${req.method} not allowed.` });
   }
 }
